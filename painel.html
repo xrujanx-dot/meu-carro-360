@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Painel de Veículos 360</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f4f4; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        h1 { color: #333; }
+        .lista-carros { width: 100%; max-width: 600px; display: grid; gap: 10px; margin-top: 20px; }
+        .carro-item { 
+            background: white; padding: 15px; border-radius: 8px; 
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            text-transform: uppercase; font-weight: bold; font-size: 14px;
+        }
+        .btn-ver { 
+            background: #007bff; color: white; text-decoration: none; 
+            padding: 8px 15px; border-radius: 5px; font-size: 12px;
+        }
+        .loading { color: #666; font-style: italic; }
+    </style>
+</head>
+<body>
+
+    <h1>Gestão de Estoque 360</h1>
+    <p>As pastas abaixo foram detectadas no seu GitHub:</p>
+
+    <div class="lista-carros" id="lista">
+        <div class="loading">Buscando pastas no GitHub...</div>
+    </div>
+
+    <script>
+        // CONFIGURAÇÃO (Mude apenas estas duas linhas)
+        const usuario = "xrujanx-dot";
+        const repositorio = "meu-carro-360";
+
+        async function buscarPastas() {
+            const url = `https://api.github.com/repos/${usuario}/${repositorio}/contents/`;
+            
+            try {
+                const response = await fetch(url);
+                const itens = await response.json();
+                const listaDiv = document.getElementById('lista');
+                listaDiv.innerHTML = ''; // Limpa o carregando
+
+                // Filtra apenas o que for pasta e ignora arquivos como index.html e painel.html
+                const pastas = itens.filter(item => item.type === 'dir');
+
+                if (pastas.length === 0) {
+                    listaDiv.innerHTML = 'Nenhuma pasta de carro encontrada.';
+                    return;
+                }
+
+                pastas.forEach(pasta => {
+                    const nomeLimpo = pasta.name.replaceAll('-', ' ');
+                    
+                    const itemHtml = `
+                        <div class="carro-item">
+                            <span>${nomeLimpo}</span>
+                            <a href="index.html?modelo=${pasta.name}" target="_blank" class="btn-ver">VER 360°</a>
+                        </div>
+                    `;
+                    listaDiv.innerHTML += itemHtml;
+                });
+
+            } catch (error) {
+                document.getElementById('lista').innerHTML = "Erro ao carregar pastas. Verifique se o repositório é público.";
+            }
+        }
+
+        buscarPastas();
+    </script>
+</body>
+</html>
