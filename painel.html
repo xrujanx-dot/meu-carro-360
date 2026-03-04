@@ -5,65 +5,65 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel de Estoque 360°</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 15px; color: #333; }
         .container { max-width: 700px; margin: 0 auto; }
-        h1 { text-align: center; color: #2c3e50; margin-bottom: 30px; font-size: 24px; }
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 25px; font-size: 22px; }
 
-        /* Estilo do Botão Principal (Modelo) */
         .modelo-btn {
             width: 100%; background: #ffffff; border: 1px solid #ddd;
-            padding: 18px 25px; margin-bottom: 10px; border-radius: 8px;
+            padding: 18px; margin-bottom: 10px; border-radius: 8px;
             text-align: left; font-size: 16px; font-weight: bold;
             color: #2c3e50; cursor: pointer; display: flex;
             justify-content: space-between; align-items: center;
-            transition: all 0.3s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             text-transform: uppercase;
         }
 
-        .modelo-btn:hover { background: #f9f9f9; border-color: #007bff; }
+        .modelo-btn.active::after { content: '▲'; font-size: 12px; color: #999; }
         .modelo-btn::after { content: '▼'; font-size: 12px; color: #999; }
-        .modelo-btn.active::after { content: '▲'; }
 
-        /* Container que abre/fecha */
         .lista-carros { 
             display: none; background: #fff; margin-top: -10px;
             margin-bottom: 15px; border: 1px solid #ddd; border-top: none;
             border-radius: 0 0 8px 8px; overflow: hidden;
-            animation: slideDown 0.3s ease-out;
-            padding: 10px 0;
         }
 
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Título da Versão (Mobi Like, Mobi Trekking, etc) */
         .versao-titulo {
-            background: #f8f9fa;
-            padding: 8px 25px;
-            font-size: 12px;
-            font-weight: bold;
-            color: #007bff;
-            text-transform: uppercase;
-            border-left: 4px solid #007bff;
-            margin: 10px 0 5px 0;
+            background: #f8f9fa; padding: 10px 20px;
+            font-size: 11px; font-weight: bold; color: #007bff;
+            text-transform: uppercase; border-left: 4px solid #007bff;
         }
 
-        /* Itens dentro da versão */
+        /* Estilo do Item e Botões Centralizados */
         .carro-item { 
-            padding: 12px 25px 12px 45px; border-bottom: 1px solid #eee;
-            display: flex; justify-content: space-between; align-items: center;
-            font-size: 13px; text-transform: uppercase; font-weight: 500;
+            padding: 15px 20px; border-bottom: 1px solid #eee;
+            display: flex; flex-direction: column; gap: 10px;
         }
-        .carro-item:last-child { border-bottom: none; }
-        .carro-item span { color: #555; }
 
-        .btn-ver { 
-            background: #007bff; color: white; text-decoration: none; 
-            padding: 6px 12px; border-radius: 5px; font-size: 10px; font-weight: bold;
+        .carro-info {
+            font-size: 13px; text-transform: uppercase; font-weight: 600;
+            color: #555; text-align: center; margin-bottom: 5px;
         }
-        .btn-ver:hover { background: #0056b3; }
+
+        .botoes-acao {
+            display: flex; gap: 8px; width: 100%;
+        }
+
+        .btn {
+            flex: 1; text-align: center; text-decoration: none; 
+            padding: 10px; border-radius: 6px; font-size: 11px; 
+            font-weight: bold; cursor: pointer; border: none;
+            transition: 0.2s;
+        }
+
+        .btn-copiar { background: #28a745; color: white; }
+        .btn-ver { background: #007bff; color: white; }
+        .btn:active { opacity: 0.7; transform: scale(0.98); }
+
+        /* Ajuste para telas pequenas (Celular) */
+        @media (max-width: 480px) {
+            .botoes-acao { flex-direction: column; }
+            .btn { padding: 12px; font-size: 12px; }
+        }
 
         .loading { text-align: center; padding: 50px; color: #666; }
     </style>
@@ -73,7 +73,7 @@
     <div class="container">
         <h1>MEU ESTOQUE 360°</h1>
         <div id="painel-lista">
-            <div class="loading">Carregando modelos...</div>
+            <div class="loading">Sincronizando estoque...</div>
         </div>
     </div>
 
@@ -89,28 +89,21 @@
                 const painel = document.getElementById('painel-lista');
                 painel.innerHTML = '';
 
-                // Agrupamento Inteligente: Modelo -> Versão -> Carros
                 const grupos = {};
-
                 pastas.forEach(p => {
                     const partes = p.name.split('-');
                     const modelo = partes[0].toUpperCase();
                     const versao = partes[1] ? partes[1].toUpperCase() : "GERAL";
                     const nomeVersaoCompleto = `${modelo} ${versao}`;
-
                     if (!grupos[modelo]) grupos[modelo] = {};
                     if (!grupos[modelo][nomeVersaoCompleto]) grupos[modelo][nomeVersaoCompleto] = [];
-                    
                     grupos[modelo][nomeVersaoCompleto].push(p);
                 });
 
-                // Cria o HTML dos botões e listas
                 for (const [modelo, versoes] of Object.entries(grupos)) {
-                    // Contagem total de carros no modelo
                     let totalNoModelo = 0;
                     for (let v in versoes) totalNoModelo += versoes[v].length;
 
-                    // Botão do Modelo Principal
                     const btn = document.createElement('button');
                     btn.className = 'modelo-btn';
                     btn.innerHTML = `${modelo} <span>(${totalNoModelo})</span>`;
@@ -118,19 +111,23 @@
                     const divLista = document.createElement('div');
                     divLista.className = 'lista-carros';
                     
-                    // Itera sobre as versões dentro do modelo (Mobi Like, Mobi Trekking...)
                     for (const [nomeVersao, carros] of Object.entries(versoes)) {
-                        // Adiciona o sub-título da versão
                         divLista.innerHTML += `<div class="versao-titulo">${nomeVersao}</div>`;
                         
                         carros.forEach(carro => {
                             const nomeExibicao = carro.name.replaceAll('-', ' ').replace('sem kit', '');
-                            divLista.innerHTML += `
-                                <div class="carro-item">
-                                    <span>${nomeExibicao}</span>
-                                    <a href="index.html?modelo=${carro.name}" target="_blank" class="btn-ver">VER 360°</a>
+                            const linkCompleto = `https://${usuario}.github.io/${repositorio}/index.html?modelo=${carro.name}`;
+                            
+                            const item = document.createElement('div');
+                            item.className = 'carro-item';
+                            item.innerHTML = `
+                                <div class="carro-info">${nomeExibicao}</div>
+                                <div class="botoes-acao">
+                                    <button class="btn btn-copiar" onclick="copiarLink('${linkCompleto}', this)">COPIAR LINK</button>
+                                    <a href="${linkCompleto}" target="_blank" class="btn btn-ver">ABRIR 360°</a>
                                 </div>
                             `;
+                            divLista.appendChild(item);
                         });
                     }
 
@@ -138,7 +135,6 @@
                         const estaAberto = divLista.style.display === 'block';
                         document.querySelectorAll('.lista-carros').forEach(l => l.style.display = 'none');
                         document.querySelectorAll('.modelo-btn').forEach(b => b.classList.remove('active'));
-                        
                         divLista.style.display = estaAberto ? 'none' : 'block';
                         if (!estaAberto) btn.classList.add('active');
                     };
@@ -146,10 +142,21 @@
                     painel.appendChild(btn);
                     painel.appendChild(divLista);
                 }
-
             } catch (e) {
                 document.getElementById('painel-lista').innerHTML = "Erro ao carregar pastas.";
             }
+        }
+
+        function copiarLink(url, botao) {
+            navigator.clipboard.writeText(url).then(() => {
+                const textoOriginal = botao.innerText;
+                botao.innerText = "✓ COPIADO!";
+                botao.style.background = "#155724";
+                setTimeout(() => {
+                    botao.innerText = textoOriginal;
+                    botao.style.background = "#28a745";
+                }, 2000);
+            });
         }
 
         carregar();
