@@ -3,73 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Painel de Veículos 360</title>
+    <title>Gestão de Estoque 360°</title>
     <style>
-        body { font-family: sans-serif; background: #f4f4f4; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        h1 { color: #333; }
-        .lista-carros { width: 100%; max-width: 600px; display: grid; gap: 10px; margin-top: 20px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 { text-align: center; color: #1a1a1a; margin-bottom: 30px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+        
+        .modelo-secao { background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 30px; overflow: hidden; }
+        .modelo-header { background: #2c3e50; color: white; padding: 15px 25px; font-size: 20px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; }
+        
+        .versao-grupo { padding: 10px 20px; border-bottom: 1px solid #eee; }
+        .versao-titulo { color: #e67e22; font-size: 14px; font-weight: bold; margin: 10px 0 10px 5px; text-transform: uppercase; display: flex; align-items: center; }
+        .versao-titulo::before { content: "↳"; margin-right: 8px; font-size: 18px; }
+
+        .lista-carros { display: grid; gap: 8px; padding-bottom: 10px; }
         .carro-item { 
-            background: white; padding: 15px; border-radius: 8px; 
+            background: #f8f9fa; padding: 12px 20px; border-radius: 6px;
             display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            text-transform: uppercase; font-weight: bold; font-size: 14px;
+            border: 1px solid #e9ecef; transition: 0.2s;
         }
+        .carro-item:hover { border-color: #007bff; background: #fff; }
+        .carro-nome { font-size: 13px; font-weight: 600; color: #444; text-transform: uppercase; }
+        
         .btn-ver { 
             background: #007bff; color: white; text-decoration: none; 
-            padding: 8px 15px; border-radius: 5px; font-size: 12px;
+            padding: 7px 15px; border-radius: 4px; font-size: 11px; font-weight: bold;
         }
-        .loading { color: #666; font-style: italic; }
+        .btn-ver:hover { background: #0056b3; }
+        
+        .loading { text-align: center; margin-top: 50px; font-size: 18px; color: #666; }
     </style>
 </head>
 <body>
 
-    <h1>Gestão de Estoque 360</h1>
-    <p>As pastas abaixo foram detectadas no seu GitHub:</p>
-
-    <div class="lista-carros" id="lista">
-        <div class="loading">Buscando pastas no GitHub...</div>
+    <div class="container">
+        <h1>MEU ESTOQUE 360°</h1>
+        <div id="painel-conteudo">
+            <div class="loading">Sincronizando com GitHub...</div>
+        </div>
     </div>
 
     <script>
-        // CONFIGURAÇÃO (Mude apenas estas duas linhas)
         const usuario = "xrujanx-dot";
         const repositorio = "meu-carro-360";
 
-        async function buscarPastas() {
-            const url = `https://api.github.com/repos/${usuario}/${repositorio}/contents/`;
-            
+        async function carregarEstoque() {
             try {
-                const response = await fetch(url);
+                const response = await fetch(`https://api.github.com/repos/${usuario}/${repositorio}/contents/`);
                 const itens = await response.json();
-                const listaDiv = document.getElementById('lista');
-                listaDiv.innerHTML = ''; // Limpa o carregando
+                const pastas = itens.filter(i => i.type === 'dir');
+                const painel = document.getElementById('painel-conteudo');
+                painel.innerHTML = '';
 
-                // Filtra apenas o que for pasta e ignora arquivos como index.html e painel.html
-                const pastas = itens.filter(item => item.type === 'dir');
+                // Organização: Modelo -> Versão -> Pastas
+                const estoque = {};
 
-                if (pastas.length === 0) {
-                    listaDiv.innerHTML = 'Nenhuma pasta de carro encontrada.';
-                    return;
-                }
+                pastas.forEach(p => {
+                    const partes = p.name.split('-');
+                    const modelo = partes[0] || "OUTROS";
+                    const versao = partes[1] || "GERAL";
 
-                pastas.forEach(pasta => {
-                    const nomeLimpo = pasta.name.replaceAll('-', ' ');
+                    if (!estoque[modelo]) estoque[modelo] = {};
+                    if (!estoque[modelo][versao]) estoque[modelo][versao] = [];
                     
-                    const itemHtml = `
-                        <div class="carro-item">
-                            <span>${nomeLimpo}</span>
-                            <a href="index.html?modelo=${pasta.name}" target="_blank" class="btn-ver">VER 360°</a>
-                        </div>
-                    `;
-                    listaDiv.innerHTML += itemHtml;
+                    estoque[modelo][versao].push(p);
                 });
 
-            } catch (error) {
-                document.getElementById('lista').innerHTML = "Erro ao carregar pastas. Verifique se o repositório é público.";
+                for (const [modelo, versoes] of Object.entries(estoque)) {
+                    let htmlModelo = `<div class="modelo-secao"><div class="modelo-header">${modelo}</div>`;
+                    
+                    for (const [versao, carros] of Object.entries(versoes)) {
+                        htmlModelo += `
+                            <div class="versao-grupo">
+                                <div class="versao-titulo">${versao}</div>
+                                <div class="lista-carros">
+                        `;
+                        
+                        carros.forEach(c => {
+                            let nomeLimpo = c.name.replaceAll('-', ' ').replace('sem kit', '');
+                            htmlModelo += `
+                                <div class="carro-item">
+                                    <span class="carro-nome">${nomeLimpo}</span>
+                                    <a href="index.html?modelo=${c.name}" target="_blank" class="btn-ver">ABRIR 360°</a>
+                                </div>
+                            `;
+                        });
+                        
+                        htmlModelo += `</div></div>`;
+                    }
+                    htmlModelo += `</div>`;
+                    painel.innerHTML += htmlModelo;
+                }
+
+            } catch (e) {
+                document.getElementById('painel-conteudo').innerHTML = "Erro ao carregar dados.";
             }
         }
 
-        buscarPastas();
+        carregarEstoque();
     </script>
 </body>
 </html>
