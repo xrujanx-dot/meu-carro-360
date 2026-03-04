@@ -24,12 +24,13 @@
         .modelo-btn::after { content: '▼'; font-size: 12px; color: #999; }
         .modelo-btn.active::after { content: '▲'; }
 
-        /* Esconde a lista por padrão */
+        /* Container que abre/fecha */
         .lista-carros { 
             display: none; background: #fff; margin-top: -10px;
             margin-bottom: 15px; border: 1px solid #ddd; border-top: none;
             border-radius: 0 0 8px 8px; overflow: hidden;
             animation: slideDown 0.3s ease-out;
+            padding: 10px 0;
         }
 
         @keyframes slideDown {
@@ -37,9 +38,21 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Itens dentro da aba aberta */
+        /* Título da Versão (Mobi Like, Mobi Trekking, etc) */
+        .versao-titulo {
+            background: #f8f9fa;
+            padding: 8px 25px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #007bff;
+            text-transform: uppercase;
+            border-left: 4px solid #007bff;
+            margin: 10px 0 5px 0;
+        }
+
+        /* Itens dentro da versão */
         .carro-item { 
-            padding: 15px 25px; border-bottom: 1px solid #eee;
+            padding: 12px 25px 12px 45px; border-bottom: 1px solid #eee;
             display: flex; justify-content: space-between; align-items: center;
             font-size: 13px; text-transform: uppercase; font-weight: 500;
         }
@@ -48,7 +61,7 @@
 
         .btn-ver { 
             background: #007bff; color: white; text-decoration: none; 
-            padding: 8px 15px; border-radius: 5px; font-size: 11px; font-weight: bold;
+            padding: 6px 12px; border-radius: 5px; font-size: 10px; font-weight: bold;
         }
         .btn-ver:hover { background: #0056b3; }
 
@@ -76,39 +89,53 @@
                 const painel = document.getElementById('painel-lista');
                 painel.innerHTML = '';
 
-                // Agrupa as pastas pela primeira palavra (Modelo)
+                // Agrupamento Inteligente: Modelo -> Versão -> Carros
                 const grupos = {};
+
                 pastas.forEach(p => {
-                    const modelo = p.name.split('-')[0].toUpperCase();
-                    if (!grupos[modelo]) grupos[modelo] = [];
-                    grupos[modelo].push(p);
+                    const partes = p.name.split('-');
+                    const modelo = partes[0].toUpperCase();
+                    const versao = partes[1] ? partes[1].toUpperCase() : "GERAL";
+                    const nomeVersaoCompleto = `${modelo} ${versao}`;
+
+                    if (!grupos[modelo]) grupos[modelo] = {};
+                    if (!grupos[modelo][nomeVersaoCompleto]) grupos[modelo][nomeVersaoCompleto] = [];
+                    
+                    grupos[modelo][nomeVersaoCompleto].push(p);
                 });
 
                 // Cria o HTML dos botões e listas
-                for (const [modelo, lista] of Object.entries(grupos)) {
-                    // Botão do Modelo
+                for (const [modelo, versoes] of Object.entries(grupos)) {
+                    // Contagem total de carros no modelo
+                    let totalNoModelo = 0;
+                    for (let v in versoes) totalNoModelo += versoes[v].length;
+
+                    // Botão do Modelo Principal
                     const btn = document.createElement('button');
                     btn.className = 'modelo-btn';
-                    btn.innerHTML = `${modelo} <span>(${lista.length})</span>`;
+                    btn.innerHTML = `${modelo} <span>(${totalNoModelo})</span>`;
                     
-                    // Container da Lista
                     const divLista = document.createElement('div');
                     divLista.className = 'lista-carros';
                     
-                    lista.forEach(carro => {
-                        const nomeExibicao = carro.name.replaceAll('-', ' ').replace('sem kit', '');
-                        divLista.innerHTML += `
-                            <div class="carro-item">
-                                <span>${nomeExibicao}</span>
-                                <a href="index.html?modelo=${carro.name}" target="_blank" class="btn-ver">VER 360°</a>
-                            </div>
-                        `;
-                    });
+                    // Itera sobre as versões dentro do modelo (Mobi Like, Mobi Trekking...)
+                    for (const [nomeVersao, carros] of Object.entries(versoes)) {
+                        // Adiciona o sub-título da versão
+                        divLista.innerHTML += `<div class="versao-titulo">${nomeVersao}</div>`;
+                        
+                        carros.forEach(carro => {
+                            const nomeExibicao = carro.name.replaceAll('-', ' ').replace('sem kit', '');
+                            divLista.innerHTML += `
+                                <div class="carro-item">
+                                    <span>${nomeExibicao}</span>
+                                    <a href="index.html?modelo=${carro.name}" target="_blank" class="btn-ver">VER 360°</a>
+                                </div>
+                            `;
+                        });
+                    }
 
-                    // Evento de clicar para abrir/fechar
                     btn.onclick = () => {
                         const estaAberto = divLista.style.display === 'block';
-                        // Fecha todos antes de abrir o novo (opcional, remova se quiser abrir vários)
                         document.querySelectorAll('.lista-carros').forEach(l => l.style.display = 'none');
                         document.querySelectorAll('.modelo-btn').forEach(b => b.classList.remove('active'));
                         
