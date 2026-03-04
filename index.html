@@ -1,69 +1,63 @@
-<script>
-    const img = document.getElementById('carro-img');
-    const viewer = document.getElementById('viewer');
-    
-    const totalImagens = 30; 
-    let indiceAtual = 0;
-    let isDragging = false;
-    let startX = 0;
-    let sensibilidade = 10; 
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>360° Car View - Debug</title>
+    <style>
+        body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background: #FFFFFF; overflow: hidden; }
+        .container-360 { width: 95%; max-width: 1000px; position: relative; }
+        #carro-img { width: 100%; height: auto; display: block; background: #f0f0f0; min-height: 300px; }
+    </style>
+</head>
+<body>
 
-    const urlParams = new URLSearchParams(window.location.search);
-    // Padrão caso não venha nada na URL
-    const pastaCarro = urlParams.get('modelo') || "pulse-drive-1.3-preto-vulcano-sem-kit";
+    <div class="container-360" id="viewer">
+        <img id="carro-img" src="" alt="Carregando...">
+    </div>
 
-    // AJUSTE DE CAMINHO: Forçando a busca na pasta correta
-    const caminhoBase = `./${pastaCarro}/`;
+    <script>
+        const img = document.getElementById('carro-img');
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Pega o modelo da URL ou usa o preto como padrão
+        const modelo = urlParams.get('modelo') || "pulse-drive-1.3-preto-vulcano-sem-kit";
+        
+        // MONTAGEM DO CAMINHO
+        const caminhoFoto = `./${modelo}/00.webp`;
+        
+        console.log("Tentando carregar:", caminhoFoto);
+        img.src = caminhoFoto;
 
-    // Carrega a imagem inicial (00.webp)
-    img.src = caminhoBase + "00.webp";
+        // SE DER ERRO NA IMAGEM, VAI APARECER UM ALERTA
+        img.onerror = function() {
+            alert("ERRO: Não encontrei a foto em: " + caminhoFoto + 
+                  "\n\nVerifique se:\n1. O nome da pasta no GitHub está idêntico.\n2. A foto 00.webp está lá dentro.");
+        };
 
-    const precarregar = () => {
-        for (let i = 0; i < totalImagens; i++) {
-            const nome = i.toString().padStart(2, '0');
-            const link = document.createElement('link');
-            link.rel = 'preload'; 
-            link.as = 'image';
-            link.href = `${caminhoBase}${nome}.webp`;
-            document.head.appendChild(link);
-        }
-    };
-    precarregar();
+        // --- Lógica de Giro (Simplificada para teste) ---
+        let isDragging = false;
+        let startX = 0;
+        let indiceAtual = 0;
 
-    function atualizarFrame(deltaX) {
-        const framesParaPular = Math.floor(deltaX / sensibilidade);
-        if (framesParaPular !== 0) {
-            let novoIndice = indiceAtual + framesParaPular;
-            while (novoIndice >= totalImagens) novoIndice -= totalImagens;
-            while (novoIndice < 0) novoIndice += totalImagens;
-            
-            const nomeFormatado = novoIndice.toString().padStart(2, '0');
-            // Atualiza a imagem durante o giro 360
-            img.src = `${caminhoBase}${nomeFormatado}.webp`;
-            
-            indiceAtual = novoIndice;
-            return true;
-        }
-        return false;
-    }
+        const mover = (e) => {
+            if (!isDragging) return;
+            const xAtual = e.pageX || (e.touches ? e.touches[0].pageX : 0);
+            const diff = xAtual - startX;
+            if (Math.abs(diff) > 10) {
+                indiceAtual = (diff > 0) ? (indiceAtual + 1) % 30 : (indiceAtual - 1 + 30) % 30;
+                const nome = indiceAtual.toString().padStart(2, '0');
+                img.src = `./${modelo}/${nome}.webp`;
+                startX = xAtual;
+            }
+        };
 
-    const iniciar = (e) => {
-        isDragging = true;
-        startX = e.pageX || (e.touches ? e.touches[0].pageX : 0);
-    };
-    const parar = () => { isDragging = false; };
-    const mover = (e) => {
-        if (!isDragging) return;
-        if(e.cancelable) e.preventDefault();
-        const xAtual = e.pageX || (e.touches ? e.touches[0].pageX : 0);
-        const diferenca = xAtual - startX;
-        if (atualizarFrame(diferenca)) { startX = xAtual; }
-    };
-
-    viewer.addEventListener('mousedown', iniciar);
-    window.addEventListener('mousemove', mover);
-    window.addEventListener('mouseup', parar);
-    viewer.addEventListener('touchstart', iniciar, {passive: false});
-    window.addEventListener('touchmove', mover, {passive: false});
-    window.addEventListener('touchend', parar);
-</script>
+        viewer.addEventListener('mousedown', (e) => { isDragging = true; startX = e.pageX; });
+        window.addEventListener('mouseup', () => isDragging = false);
+        window.addEventListener('mousemove', mover);
+        viewer.addEventListener('touchstart', (e) => { isDragging = true; startX = e.touches[0].pageX; });
+        window.addEventListener('touchend', () => isDragging = false);
+        window.addEventListener('touchmove', mover, {passive: false});
+    </script>
+</body>
+</html>
