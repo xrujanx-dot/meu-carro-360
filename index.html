@@ -1,122 +1,63 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>360° Car View</title>
-    <style>
-        body {
-            margin: 0; padding: 0;
-            display: flex; justify-content: center; align-items: center;
-            height: 100vh; 
-            background: #FFFFFF; /* Fundo Branco conforme solicitado */
-            overflow: hidden; font-family: sans-serif;
+<script>
+    const img = document.getElementById('carro-img');
+    const viewer = document.getElementById('viewer');
+    
+    const totalImagens = 30; 
+    let indiceAtual = 0;
+    let isDragging = false;
+    let startX = 0;
+    let sensibilidade = 10; 
+
+    // --- MUDANÇA AQUI: O código agora lê o nome da pasta pelo link ---
+    // Se você mandar o link puro, ele abre o "preto-vulcano" por padrão.
+    const urlParams = new URLSearchParams(window.location.search);
+    const pastaCarro = urlParams.get('modelo') || "pulse-drive-1.3-preto-vulcano-sem-kit";
+
+    // Atualiza a imagem inicial e o caminho do precarregamento
+    img.src = `${pastaCarro}/00.webp`;
+
+    const precarregar = () => {
+        for (let i = 0; i < totalImagens; i++) {
+            const nome = i.toString().padStart(2, '0');
+            const link = document.createElement('link');
+            link.rel = 'preload'; link.as = 'image';
+            link.href = `${pastaCarro}/${nome}.webp`;
+            document.head.appendChild(link);
         }
+    };
+    precarregar();
 
-        .container-360 {
-            width: 95%; max-width: 1000px;
-            position: relative; cursor: grab;
-            touch-action: none; 
+    function atualizarFrame(deltaX) {
+        const framesParaPular = Math.floor(deltaX / sensibilidade);
+        if (framesParaPular !== 0) {
+            let novoIndice = indiceAtual + framesParaPular;
+            while (novoIndice >= totalImagens) novoIndice -= totalImagens;
+            while (novoIndice < 0) novoIndice += totalImagens;
+            const nomeFormatado = novoIndice.toString().padStart(2, '0');
+            img.src = `${pastaCarro}/${nomeFormatado}.webp`;
+            indiceAtual = novoIndice;
+            return true;
         }
+        return false;
+    }
 
-        .container-360:active { cursor: grabbing; }
+    const iniciar = (e) => {
+        isDragging = true;
+        startX = e.pageX || (e.touches ? e.touches[0].pageX : 0);
+    };
+    const parar = () => { isDragging = false; };
+    const mover = (e) => {
+        if (!isDragging) return;
+        if(e.cancelable) e.preventDefault();
+        const xAtual = e.pageX || (e.touches ? e.touches[0].pageX : 0);
+        const diferenca = xAtual - startX;
+        if (atualizarFrame(diferenca)) { startX = xAtual; }
+    };
 
-        #carro-img {
-            width: 100%; height: auto;
-            user-select: none;
-            -webkit-user-drag: none;
-            display: block;
-        }
-
-        .instrucoes {
-            position: absolute; bottom: -40px; left: 50%;
-            transform: translateX(-50%); color: #666;
-            font-size: 12px; text-transform: uppercase; letter-spacing: 1px;
-            white-space: nowrap;
-        }
-    </style>
-</head>
-<body>
-
-    <div class="container-360" id="viewer">
-        <img id="carro-img" src="pulse-drive-1.3-preto-vulcano-sem-kit/00.webp" alt="Carro 360">
-        <div class="instrucoes">◄ Arraste para Girar ►</div>
-    </div>
-
-    <script>
-        const img = document.getElementById('carro-img');
-        const viewer = document.getElementById('viewer');
-        
-        const totalImagens = 30; 
-        let indiceAtual = 0;
-        
-        let isDragging = false;
-        let startX = 0;
-        let sensibilidade = 10; 
-
-        // Nome da pasta que você renomeou
-        const pastaCarro = "pulse-drive-1.3-preto-vulcano-sem-kit";
-
-        // Pré-carregamento para 00.webp até 29.webp
-        const precarregar = () => {
-            for (let i = 0; i < totalImagens; i++) {
-                const nome = i.toString().padStart(2, '0');
-                const link = document.createElement('link');
-                link.rel = 'preload'; link.as = 'image';
-                link.href = `${pastaCarro}/${nome}.webp`;
-                document.head.appendChild(link);
-            }
-        };
-        precarregar();
-
-        function atualizarFrame(deltaX) {
-            const framesParaPular = Math.floor(deltaX / sensibilidade);
-            
-            if (framesParaPular !== 0) {
-                // Lógica de giro acompanhando o mouse/dedo
-                let novoIndice = indiceAtual + framesParaPular;
-                
-                while (novoIndice >= totalImagens) novoIndice -= totalImagens;
-                while (novoIndice < 0) novoIndice += totalImagens;
-                
-                const nomeFormatado = novoIndice.toString().padStart(2, '0');
-                img.src = `${pastaCarro}/${nomeFormatado}.webp`;
-                
-                indiceAtual = novoIndice;
-                return true;
-            }
-            return false;
-        }
-
-        const iniciar = (e) => {
-            isDragging = true;
-            startX = e.pageX || (e.touches ? e.touches[0].pageX : 0);
-        };
-
-        const parar = () => { isDragging = false; };
-
-        const mover = (e) => {
-            if (!isDragging) return;
-            if(e.cancelable) e.preventDefault();
-
-            const xAtual = e.pageX || (e.touches ? e.touches[0].pageX : 0);
-            const diferenca = xAtual - startX;
-
-            if (atualizarFrame(diferenca)) {
-                startX = xAtual; 
-            }
-        };
-
-        // Eventos Mouse
-        viewer.addEventListener('mousedown', iniciar);
-        window.addEventListener('mousemove', mover);
-        window.addEventListener('mouseup', parar);
-
-        // Eventos Touch
-        viewer.addEventListener('touchstart', iniciar, {passive: false});
-        window.addEventListener('touchmove', mover, {passive: false});
-        window.addEventListener('touchend', parar);
-
-    </script>
-</body>
-</html>
+    viewer.addEventListener('mousedown', iniciar);
+    window.addEventListener('mousemove', mover);
+    window.addEventListener('mouseup', parar);
+    viewer.addEventListener('touchstart', iniciar, {passive: false});
+    window.addEventListener('touchmove', mover, {passive: false});
+    window.addEventListener('touchend', parar);
+</script>
