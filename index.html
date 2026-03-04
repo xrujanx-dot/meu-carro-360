@@ -21,6 +21,16 @@
 
         .container-360:active { cursor: grabbing; }
 
+        /* Estilo do Nome do Veículo */
+        #nome-veiculo {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
         #carro-img {
             width: 100%; height: auto;
             user-select: none;
@@ -39,6 +49,8 @@
 <body>
 
     <div class="container-360" id="viewer">
+        <div id="nome-veiculo"></div> 
+        
         <img id="carro-img" src="" alt="Carro 360">
         <div class="instrucoes">◄ Arraste para Girar ►</div>
     </div>
@@ -53,12 +65,14 @@
         let startX = 0;
         let sensibilidade = 10; 
 
-        // --- AJUSTE PARA PEGAR A PASTA PELO LINK ---
         const urlParams = new URLSearchParams(window.location.search);
-        // Se o link não tiver nada, ele tenta abrir a pasta do preto por padrão
         const pastaCarro = urlParams.get('modelo') || "pulse-drive-1.3-preto-vulcano-sem-kit";
 
-        // Define a imagem inicial logo que o site abre
+        // Lógica para o Nome: Remove hífens e esconde o "sem kit"
+        let nomeExibicao = pastaCarro.replaceAll('-', ' ');
+        nomeExibicao = nomeExibicao.replace('sem kit', ''); 
+        document.getElementById('nome-veiculo').innerText = nomeExibicao;
+
         img.src = `${pastaCarro}/00.webp`;
 
         const precarregar = () => {
