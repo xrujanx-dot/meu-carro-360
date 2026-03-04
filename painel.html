@@ -3,43 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão de Estoque 360°</title>
+    <title>Painel de Estoque 360°</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
-        .container { max-width: 900px; margin: 0 auto; }
-        h1 { text-align: center; color: #1a1a1a; margin-bottom: 30px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
-        
-        .modelo-secao { background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 30px; overflow: hidden; }
-        .modelo-header { background: #2c3e50; color: white; padding: 15px 25px; font-size: 20px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; }
-        
-        .versao-grupo { padding: 10px 20px; border-bottom: 1px solid #eee; }
-        .versao-titulo { color: #e67e22; font-size: 14px; font-weight: bold; margin: 10px 0 10px 5px; text-transform: uppercase; display: flex; align-items: center; }
-        .versao-titulo::before { content: "↳"; margin-right: 8px; font-size: 18px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; padding: 20px; color: #333; }
+        .container { max-width: 700px; margin: 0 auto; }
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 30px; font-size: 24px; }
 
-        .lista-carros { display: grid; gap: 8px; padding-bottom: 10px; }
-        .carro-item { 
-            background: #f8f9fa; padding: 12px 20px; border-radius: 6px;
-            display: flex; justify-content: space-between; align-items: center;
-            border: 1px solid #e9ecef; transition: 0.2s;
+        /* Estilo do Botão Principal (Modelo) */
+        .modelo-btn {
+            width: 100%; background: #ffffff; border: 1px solid #ddd;
+            padding: 18px 25px; margin-bottom: 10px; border-radius: 8px;
+            text-align: left; font-size: 16px; font-weight: bold;
+            color: #2c3e50; cursor: pointer; display: flex;
+            justify-content: space-between; align-items: center;
+            transition: all 0.3s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            text-transform: uppercase;
         }
-        .carro-item:hover { border-color: #007bff; background: #fff; }
-        .carro-nome { font-size: 13px; font-weight: 600; color: #444; text-transform: uppercase; }
-        
+
+        .modelo-btn:hover { background: #f9f9f9; border-color: #007bff; }
+        .modelo-btn::after { content: '▼'; font-size: 12px; color: #999; }
+        .modelo-btn.active::after { content: '▲'; }
+
+        /* Esconde a lista por padrão */
+        .lista-carros { 
+            display: none; background: #fff; margin-top: -10px;
+            margin-bottom: 15px; border: 1px solid #ddd; border-top: none;
+            border-radius: 0 0 8px 8px; overflow: hidden;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Itens dentro da aba aberta */
+        .carro-item { 
+            padding: 15px 25px; border-bottom: 1px solid #eee;
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 13px; text-transform: uppercase; font-weight: 500;
+        }
+        .carro-item:last-child { border-bottom: none; }
+        .carro-item span { color: #555; }
+
         .btn-ver { 
             background: #007bff; color: white; text-decoration: none; 
-            padding: 7px 15px; border-radius: 4px; font-size: 11px; font-weight: bold;
+            padding: 8px 15px; border-radius: 5px; font-size: 11px; font-weight: bold;
         }
         .btn-ver:hover { background: #0056b3; }
-        
-        .loading { text-align: center; margin-top: 50px; font-size: 18px; color: #666; }
+
+        .loading { text-align: center; padding: 50px; color: #666; }
     </style>
 </head>
 <body>
 
     <div class="container">
         <h1>MEU ESTOQUE 360°</h1>
-        <div id="painel-conteudo">
-            <div class="loading">Sincronizando com GitHub...</div>
+        <div id="painel-lista">
+            <div class="loading">Carregando modelos...</div>
         </div>
     </div>
 
@@ -47,60 +68,64 @@
         const usuario = "xrujanx-dot";
         const repositorio = "meu-carro-360";
 
-        async function carregarEstoque() {
+        async function carregar() {
             try {
                 const response = await fetch(`https://api.github.com/repos/${usuario}/${repositorio}/contents/`);
                 const itens = await response.json();
                 const pastas = itens.filter(i => i.type === 'dir');
-                const painel = document.getElementById('painel-conteudo');
+                const painel = document.getElementById('painel-lista');
                 painel.innerHTML = '';
 
-                // Organização: Modelo -> Versão -> Pastas
-                const estoque = {};
-
+                // Agrupa as pastas pela primeira palavra (Modelo)
+                const grupos = {};
                 pastas.forEach(p => {
-                    const partes = p.name.split('-');
-                    const modelo = partes[0] || "OUTROS";
-                    const versao = partes[1] || "GERAL";
-
-                    if (!estoque[modelo]) estoque[modelo] = {};
-                    if (!estoque[modelo][versao]) estoque[modelo][versao] = [];
-                    
-                    estoque[modelo][versao].push(p);
+                    const modelo = p.name.split('-')[0].toUpperCase();
+                    if (!grupos[modelo]) grupos[modelo] = [];
+                    grupos[modelo].push(p);
                 });
 
-                for (const [modelo, versoes] of Object.entries(estoque)) {
-                    let htmlModelo = `<div class="modelo-secao"><div class="modelo-header">${modelo}</div>`;
+                // Cria o HTML dos botões e listas
+                for (const [modelo, lista] of Object.entries(grupos)) {
+                    // Botão do Modelo
+                    const btn = document.createElement('button');
+                    btn.className = 'modelo-btn';
+                    btn.innerHTML = `${modelo} <span>(${lista.length})</span>`;
                     
-                    for (const [versao, carros] of Object.entries(versoes)) {
-                        htmlModelo += `
-                            <div class="versao-grupo">
-                                <div class="versao-titulo">${versao}</div>
-                                <div class="lista-carros">
+                    // Container da Lista
+                    const divLista = document.createElement('div');
+                    divLista.className = 'lista-carros';
+                    
+                    lista.forEach(carro => {
+                        const nomeExibicao = carro.name.replaceAll('-', ' ').replace('sem kit', '');
+                        divLista.innerHTML += `
+                            <div class="carro-item">
+                                <span>${nomeExibicao}</span>
+                                <a href="index.html?modelo=${carro.name}" target="_blank" class="btn-ver">VER 360°</a>
+                            </div>
                         `;
+                    });
+
+                    // Evento de clicar para abrir/fechar
+                    btn.onclick = () => {
+                        const estaAberto = divLista.style.display === 'block';
+                        // Fecha todos antes de abrir o novo (opcional, remova se quiser abrir vários)
+                        document.querySelectorAll('.lista-carros').forEach(l => l.style.display = 'none');
+                        document.querySelectorAll('.modelo-btn').forEach(b => b.classList.remove('active'));
                         
-                        carros.forEach(c => {
-                            let nomeLimpo = c.name.replaceAll('-', ' ').replace('sem kit', '');
-                            htmlModelo += `
-                                <div class="carro-item">
-                                    <span class="carro-nome">${nomeLimpo}</span>
-                                    <a href="index.html?modelo=${c.name}" target="_blank" class="btn-ver">ABRIR 360°</a>
-                                </div>
-                            `;
-                        });
-                        
-                        htmlModelo += `</div></div>`;
-                    }
-                    htmlModelo += `</div>`;
-                    painel.innerHTML += htmlModelo;
+                        divLista.style.display = estaAberto ? 'none' : 'block';
+                        if (!estaAberto) btn.classList.add('active');
+                    };
+
+                    painel.appendChild(btn);
+                    painel.appendChild(divLista);
                 }
 
             } catch (e) {
-                document.getElementById('painel-conteudo').innerHTML = "Erro ao carregar dados.";
+                document.getElementById('painel-lista').innerHTML = "Erro ao carregar pastas.";
             }
         }
 
-        carregarEstoque();
+        carregar();
     </script>
 </body>
 </html>
