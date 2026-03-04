@@ -8,6 +8,7 @@
         body { font-family: 'Segoe UI', Arial, sans-serif; background: #eef2f3; padding: 10px; margin: 0; color: #333; }
         .container { max-width: 600px; margin: 0 auto; }
         h1 { text-align: center; color: #2c3e50; font-size: 18px; margin: 20px 0; text-transform: uppercase; letter-spacing: 1px; }
+        
         .modelo-btn {
             width: 100%; background: #ffffff; border: 1px solid #d1d8db;
             padding: 15px; margin-bottom: 5px; border-radius: 8px;
@@ -16,27 +17,34 @@
             justify-content: space-between; align-items: center;
             text-transform: uppercase; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
+
         .lista-carros { 
             display: none; background: #ffffff; margin-top: -5px; 
             margin-bottom: 10px; border: 1px solid #d1d8db; border-top: none; 
             border-radius: 0 0 8px 8px; overflow: hidden;
         }
+
+        /* SEPARADOR DE VERSÃO */
+        .secao-versao { border-bottom: 2px solid #eee; margin-bottom: 0; }
         .versao-titulo {
-            background: #f1f4f5; padding: 6px 15px; font-size: 10px;
+            background: #f8f9fa; padding: 8px 15px; font-size: 10px;
             font-weight: bold; color: #007bff; text-transform: uppercase;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid #eee; border-top: 1px solid #eee;
         }
+
         .carro-item { 
             padding: 10px 15px; border-bottom: 1px solid #f0f0f0;
             display: flex; justify-content: space-between; align-items: center;
             background: #fff;
         }
         .carro-item:last-child { border-bottom: none; }
+
         .carro-nome {
             font-size: 11px; text-transform: uppercase; font-weight: 600;
             color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             margin-right: 10px;
         }
+
         .botoes-acao { display: flex; gap: 4px; }
         .btn {
             text-decoration: none; padding: 6px 12px; border-radius: 4px;
@@ -75,99 +83,89 @@
                 pastas.forEach(p => {
                     const nomeOriginal = p.name.toLowerCase();
                     const partes = p.name.split('-');
-                    
                     let modelo = partes[0].toUpperCase();
-                    let versaoCompleta = "";
+                    let versaoFinal = "";
                     let restoIndice = 2;
 
-                    // 1. Tratar T200 (Fastback e Pulse)
+                    // Lógica Fastback / Pulse T200
                     if (nomeOriginal.includes('t200')) {
-                        const baseVersao = partes[1].toUpperCase();
-                        versaoCompleta = `${baseVersao} T200`;
-                        restoIndice = 3; 
+                        versaoFinal = partes[1].toUpperCase() + " T200";
+                        restoIndice = 3;
                     } 
-                    // 2. Tratar Argo (Regra MT padrão somente para ele)
+                    // Lógica Argo (MT padrão)
                     else if (modelo === "ARGO") {
+                        const motor = nomeOriginal.includes('1.0') ? '1.0' : (nomeOriginal.includes('1.3') ? '1.3' : '');
                         const cambio = nomeOriginal.includes('at') ? 'AT' : 'MT';
-                        if (nomeOriginal.includes('drive')) {
-                            const motor = nomeOriginal.includes('1.0') ? '1.0' : '1.3';
-                            versaoCompleta = `DRIVE ${motor} ${cambio}`;
-                            restoIndice = (nomeOriginal.includes('1.0') || nomeOriginal.includes('1.3')) ? 3 : 2;
-                        } else if (nomeOriginal.includes('trekking')) {
-                            versaoCompleta = `TREKKING ${cambio}`;
-                            restoIndice = 2;
-                        } else {
-                            versaoCompleta = partes[1] ? partes[1].toUpperCase() : "GERAL";
-                            restoIndice = 2;
-                        }
+                        const tipo = nomeOriginal.includes('drive') ? 'DRIVE' : (nomeOriginal.includes('trekking') ? 'TREKKING' : partes[1].toUpperCase());
+                        versaoFinal = `${tipo} ${motor} ${cambio}`.replace('  ', ' ').trim();
+                        restoIndice = (motor !== '') ? 3 : 2;
                     }
-                    // 3. Outros modelos (Trekking de outros carros, Pulse Drive, etc)
+                    // Lógica Pulse Drive (AT padrão)
+                    else if (modelo === "PULSE" && nomeOriginal.includes('drive')) {
+                        const cambio = nomeOriginal.includes('mt') ? 'MT' : 'AT';
+                        versaoFinal = "DRIVE " + cambio;
+                        restoIndice = 2;
+                    }
                     else {
-                        let prefixo = partes[1] ? partes[1].toUpperCase() : "GERAL";
-                        let sufixo = "";
-                        
-                        // Se for Pulse Drive AT/MT (Onde não tem AT é AT, como você pediu antes)
-                        if (modelo === "PULSE" && nomeOriginal.includes('drive')) {
-                            sufixo = nomeOriginal.includes('mt') ? " MT" : " AT";
-                        } 
-                        // Regra geral de câmbio para os demais que tiverem a marcação
-                        else if (nomeOriginal.includes('at')) sufixo = " AT";
-                        else if (nomeOriginal.includes('mt')) sufixo = " MT";
-
-                        versaoCompleta = prefixo + sufixo;
+                        versaoFinal = partes[1] ? partes[1].toUpperCase() : "GERAL";
                         restoIndice = 2;
                     }
 
-                    const chaveAgrupadora = `${modelo} ${versaoCompleta}`;
-
                     if (!grupos[modelo]) grupos[modelo] = {};
-                    if (!grupos[modelo][chaveAgrupadora]) grupos[modelo][chaveAgrupadora] = [];
+                    if (!grupos[modelo][versaoFinal]) grupos[modelo][versaoFinal] = [];
                     
-                    grupos[modelo][chaveAgrupadora].push({
+                    grupos[modelo][versaoFinal].push({
                         p: p,
                         nomeCurto: partes.slice(restoIndice).join(' ').replace('sem kit', '').trim() || "PADRÃO"
                     });
                 });
 
+                // Renderização do HTML
                 for (const [modelo, versoes] of Object.entries(grupos)) {
-                    let total = 0;
-                    for (let v in versoes) total += versoes[v].length;
+                    let totalModelo = 0;
+                    for (let v in versoes) totalModelo += versoes[v].length;
 
-                    const btn = document.createElement('button');
-                    btn.className = 'modelo-btn';
-                    btn.innerHTML = `<span>${modelo}</span> <span style="font-size:10px; color:#999; font-weight:normal;">${total} VEÍCULOS</span>`;
+                    const btnModelo = document.createElement('button');
+                    btnModelo.className = 'modelo-btn';
+                    btnModelo.innerHTML = `<span>${modelo}</span> <span style="font-size:10px; color:#999; font-weight:normal;">${totalModelo} ITENS</span>`;
                     
                     const divLista = document.createElement('div');
                     divLista.className = 'lista-carros';
-                    
-                    for (const [nomeVersao, carros] of Object.entries(versoes)) {
-                        divLista.innerHTML += `<div class="versao-titulo">${nomeVersao}</div>`;
-                        
-                        carros.forEach(carroObj => {
-                            const link = `https://${usuario}.github.io/${repositorio}/index.html?modelo=${carroObj.p.name}`;
+
+                    // Ordena as versões para AT e MT ficarem separadas e bonitas
+                    const versoesOrdenadas = Object.keys(versoes).sort();
+
+                    versoesOrdenadas.forEach(v => {
+                        const secao = document.createElement('div');
+                        secao.className = 'secao-versao';
+                        secao.innerHTML = `<div class="versao-titulo">${modelo} ${v}</div>`;
+
+                        versoes[v].forEach(carro => {
+                            const link = `https://${usuario}.github.io/${repositorio}/index.html?modelo=${carro.p.name}`;
                             const item = document.createElement('div');
                             item.className = 'carro-item';
                             item.innerHTML = `
-                                <div class="carro-nome">${carroObj.nomeCurto}</div>
+                                <div class="carro-nome">${carro.nomeCurto}</div>
                                 <div class="botoes-acao">
                                     <button class="btn btn-copiar" onclick="copiarLink('${link}', this)">Link</button>
                                     <a href="${link}" target="_blank" class="btn btn-ver">Abrir</a>
                                 </div>
                             `;
-                            divLista.appendChild(item);
+                            secao.appendChild(item);
                         });
-                    }
+                        divLista.appendChild(secao);
+                    });
 
-                    btn.onclick = () => {
-                        const aberto = divLista.style.display === 'block';
+                    btnModelo.onclick = () => {
+                        const estaAberto = divLista.style.display === 'block';
                         document.querySelectorAll('.lista-carros').forEach(l => l.style.display = 'none');
-                        divLista.style.display = aberto ? 'none' : 'block';
+                        divLista.style.display = estaAberto ? 'none' : 'block';
                     };
 
-                    painel.appendChild(btn);
+                    painel.appendChild(btnModelo);
                     painel.appendChild(divLista);
                 }
-            } catch (e) { painel.innerHTML = "<div class='loading'>Erro ao conectar.</div>"; }
+            } catch (e) { console.error(e); }
         }
 
         function copiarLink(url, btn) {
