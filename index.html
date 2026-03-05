@@ -23,18 +23,17 @@
             color: #333; margin-bottom: 10px; text-transform: uppercase;
         }
 
-        /* --- ESTILO DAS BOLINHAS (ACRÉSCIMO) --- */
+        /* --- SELETOR DE CORES --- */
         #seletor-cores {
             display: flex; gap: 12px; justify-content: center;
             margin-bottom: 25px; z-index: 100;
-            min-height: 40px; /* Garante espaço mesmo se carregar depois */
+            min-height: 40px;
         }
         .bola-cor {
             width: 35px; height: 35px; border-radius: 50%;
             border: 2px solid #ddd; cursor: pointer;
             object-fit: cover; transition: all 0.2s ease;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            background-color: #f0f0f0; /* Fundo enquanto carrega */
         }
         .bola-cor:hover { transform: scale(1.1); }
         .bola-cor.ativa { 
@@ -42,7 +41,6 @@
             box-shadow: 0 0 10px rgba(0,123,255,0.5); 
             transform: scale(1.1);
         }
-        /* --------------------------------------- */
 
         .wrapper-img {
             width: 100%; overflow: hidden;
@@ -85,8 +83,14 @@
         const img = document.getElementById('carro-img');
         const instrucao = document.getElementById('txt-instrucao');
         const totalImagens = 30; 
-        let indiceAtual = 0;
         let isDragging = false;
+
+        // Captura o modelo e o frame atual da URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const pastaCarro = urlParams.get('modelo') || "pulse-drive-1.3-preto-vulcano-sem-kit";
+        
+        // RECUPERA O ÂNGULO: Se não tiver na URL, começa em 0
+        let indiceAtual = parseInt(urlParams.get('frame')) || 0;
 
         let zoomAtual = 1;
         let posX = 0, posY = 0;
@@ -94,21 +98,16 @@
         let initialPinchDist = 0;
         let sensibilidadeGiro = 12;
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const pastaCarro = urlParams.get('modelo') || "pulse-drive-1.3-preto-vulcano-sem-kit";
-
-        // --- LÓGICA DO SELETOR DE CORES (REVISADA) ---
+        // LÓGICA DO SELETOR
         const usuario = "xrujanx-dot";
         const repositorio = "meu-carro-360";
         const listaCoresRef = ["azul-amalfi", "cinza-strato", "preto-vulcano", "vermelho-montecarlo", "branco-banchisa", "prata-bari", "cinza-silvestone"];
 
         async function carregarSeletorCores() {
             try {
-                // Buscamos a lista de pastas do repositório
                 const res = await fetch(`https://api.github.com/repos/${usuario}/${repositorio}/contents/`);
                 const pastasRepositorio = await res.json();
                 
-                // Descobre o "DNA" do modelo atual (ex: argo-drive-mt)
                 let dnaModelo = "";
                 for (let cor of listaCoresRef) {
                     if (pastaCarro.includes(cor)) {
@@ -120,7 +119,6 @@
                 const seletorDiv = document.getElementById('seletor-cores');
                 seletorDiv.innerHTML = '';
 
-                // Filtra pastas que são do mesmo modelo
                 const modelosIrmaos = pastasRepositorio.filter(p => p.type === 'dir' && p.name.startsWith(dnaModelo));
 
                 listaCoresRef.forEach(corRef => {
@@ -128,13 +126,13 @@
                     
                     if (pastaExiste) {
                         const btn = document.createElement('img');
-                        // AJUSTE: Caminho relativo para a pasta cores (mais seguro)
                         btn.src = `cores/${corRef}.png`;
                         btn.className = 'bola-cor' + (pastaCarro === pastaExiste.name ? ' ativa' : '');
                         
                         btn.onclick = () => {
                             if (pastaCarro !== pastaExiste.name) {
-                                window.location.href = `index.html?modelo=${pastaExiste.name}`;
+                                // ENVIA O FRAME ATUAL PARA A NOVA URL
+                                window.location.href = `index.html?modelo=${pastaExiste.name}&frame=${indiceAtual}`;
                             }
                         };
                         seletorDiv.appendChild(btn);
@@ -143,10 +141,11 @@
             } catch (e) { console.error("Erro ao carregar seletor:", e); }
         }
         carregarSeletorCores();
-        // ----------------------------------------------
 
+        // Inicializa a imagem no ângulo correto
         document.getElementById('nome-veiculo').innerText = pastaCarro.replaceAll('-', ' ').replace('sem kit', '');
-        img.src = `${pastaCarro}/00.webp`;
+        const frameInicial = indiceAtual.toString().padStart(2, '0');
+        img.src = `${pastaCarro}/${frameInicial}.webp`;
 
         function aplicarTransform() {
             zoomAtual = Math.min(Math.max(1, zoomAtual), 4);
