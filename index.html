@@ -26,13 +26,15 @@
         /* --- ESTILO DAS BOLINHAS (ACRÉSCIMO) --- */
         #seletor-cores {
             display: flex; gap: 12px; justify-content: center;
-            margin-bottom: 20px; z-index: 100;
+            margin-bottom: 25px; z-index: 100;
+            min-height: 40px; /* Garante espaço mesmo se carregar depois */
         }
         .bola-cor {
             width: 35px; height: 35px; border-radius: 50%;
             border: 2px solid #ddd; cursor: pointer;
             object-fit: cover; transition: all 0.2s ease;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background-color: #f0f0f0; /* Fundo enquanto carrega */
         }
         .bola-cor:hover { transform: scale(1.1); }
         .bola-cor.ativa { 
@@ -86,24 +88,23 @@
         let indiceAtual = 0;
         let isDragging = false;
 
-        // Variáveis de Controle de Zoom e Posição
         let zoomAtual = 1;
         let posX = 0, posY = 0;
         let startX = 0, startY = 0;
         let initialPinchDist = 0;
         let sensibilidadeGiro = 12;
 
-        // Captura o modelo da URL
         const urlParams = new URLSearchParams(window.location.search);
         const pastaCarro = urlParams.get('modelo') || "pulse-drive-1.3-preto-vulcano-sem-kit";
 
-        // --- LÓGICA DO SELETOR DE CORES (ACRÉSCIMO) ---
+        // --- LÓGICA DO SELETOR DE CORES (REVISADA) ---
         const usuario = "xrujanx-dot";
         const repositorio = "meu-carro-360";
         const listaCoresRef = ["azul-amalfi", "cinza-strato", "preto-vulcano", "vermelho-montecarlo", "branco-banchisa", "prata-bari", "cinza-silvestone"];
 
         async function carregarSeletorCores() {
             try {
+                // Buscamos a lista de pastas do repositório
                 const res = await fetch(`https://api.github.com/repos/${usuario}/${repositorio}/contents/`);
                 const pastasRepositorio = await res.json();
                 
@@ -119,52 +120,45 @@
                 const seletorDiv = document.getElementById('seletor-cores');
                 seletorDiv.innerHTML = '';
 
-                // Filtra pastas que são do mesmo modelo/DNA
+                // Filtra pastas que são do mesmo modelo
                 const modelosIrmaos = pastasRepositorio.filter(p => p.type === 'dir' && p.name.startsWith(dnaModelo));
 
                 listaCoresRef.forEach(corRef => {
-                    // Verifica se existe uma pasta para esta cor específica deste modelo
                     const pastaExiste = modelosIrmaos.find(p => p.name.includes(corRef));
                     
                     if (pastaExiste) {
                         const btn = document.createElement('img');
-                        // Busca a bolinha que você criou na sua pasta 'cores'
-                        btn.src = `https://raw.githubusercontent.com/${usuario}/${repositorio}/main/cores/${corRef}.png`;
+                        // AJUSTE: Caminho relativo para a pasta cores (mais seguro)
+                        btn.src = `cores/${corRef}.png`;
                         btn.className = 'bola-cor' + (pastaCarro === pastaExiste.name ? ' ativa' : '');
                         
                         btn.onclick = () => {
                             if (pastaCarro !== pastaExiste.name) {
-                                window.location.search = `?modelo=${pastaExiste.name}`;
+                                window.location.href = `index.html?modelo=${pastaExiste.name}`;
                             }
                         };
                         seletorDiv.appendChild(btn);
                     }
                 });
-            } catch (e) { console.error("Erro ao carregar seletor"); }
+            } catch (e) { console.error("Erro ao carregar seletor:", e); }
         }
         carregarSeletorCores();
         // ----------------------------------------------
 
-        // Título formatado
         document.getElementById('nome-veiculo').innerText = pastaCarro.replaceAll('-', ' ').replace('sem kit', '');
         img.src = `${pastaCarro}/00.webp`;
 
-        // Função para aplicar transformações de Zoom e Arraste
         function aplicarTransform() {
-            // Limita o zoom entre 1x e 4x
             zoomAtual = Math.min(Math.max(1, zoomAtual), 4);
-            
             if (zoomAtual <= 1.05) { 
                 zoomAtual = 1; posX = 0; posY = 0; 
                 instrucao.innerText = "◄ Gire ou use o Scroll/Pinça para Zoom ►";
             } else {
                 instrucao.innerText = "Modo Detalhes: Arraste para navegar";
             }
-            
             img.style.transform = `scale(${zoomAtual}) translate(${posX / zoomAtual}px, ${posY / zoomAtual}px)`;
         }
 
-        // Zoom via Scroll do Mouse (PC)
         window.addEventListener('wheel', (e) => {
             if (Math.abs(e.deltaY) > 0) {
                 const delta = e.deltaY > 0 ? -0.2 : 0.2;
@@ -173,10 +167,8 @@
             }
         }, { passive: false });
 
-        // Cálculo de distância para Pinça (Mobile)
         const getDist = (t1, t2) => Math.hypot(t1.pageX - t2.pageX, t1.pageY - t2.pageY);
 
-        // Início da interação (Mouse ou Toque)
         const iniciar = (e) => {
             isDragging = true;
             if (e.touches && e.touches.length === 2) {
@@ -188,12 +180,10 @@
             }
         };
 
-        // Movimentação (Giro ou Arraste da foto)
         const mover = (e) => {
             if (!isDragging) return;
             if (e.cancelable) e.preventDefault();
 
-            // Zoom de Pinça com 2 dedos
             if (e.touches && e.touches.length === 2) {
                 const currentDist = getDist(e.touches[0], e.touches[1]);
                 const diff = currentDist / initialPinchDist;
@@ -208,14 +198,12 @@
             const deltaY = event.pageY - startY;
 
             if (zoomAtual > 1.1) {
-                // Modo PAN: Arrastar a foto aproximada
                 posX += deltaX;
                 posY += deltaY;
                 startX = event.pageX;
                 startY = event.pageY;
                 aplicarTransform();
             } else {
-                // Modo GIRO: Trocar as imagens
                 const frames = Math.floor(deltaX / sensibilidadeGiro);
                 if (frames !== 0) {
                     indiceAtual = (indiceAtual + frames + totalImagens) % totalImagens;
@@ -226,12 +214,8 @@
             }
         };
 
-        const parar = () => { 
-            isDragging = false; 
-            initialPinchDist = 0; 
-        };
+        const parar = () => { isDragging = false; initialPinchDist = 0; };
 
-        // Listeners
         const area = document.getElementById('drag-area');
         area.addEventListener('mousedown', iniciar);
         window.addEventListener('mousemove', mover);
@@ -241,7 +225,6 @@
         window.addEventListener('touchmove', mover, {passive: false});
         window.addEventListener('touchend', parar);
 
-        // Pré-carregamento das imagens
         const precarregar = () => {
             for (let i = 0; i < totalImagens; i++) {
                 const link = document.createElement('link');
