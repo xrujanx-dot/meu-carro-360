@@ -78,6 +78,9 @@
         const usuario = "xrujanx-dot";
         const repositorio = "meu-carro-360";
 
+        // Lista de cores para gatilho de corte
+        const listaCores = ["vermelho", "preto", "branco", "cinza", "prata", "azul", "grafite", "stratos", "bari", "vulcano", "banchisa", "montecarlo", "silvestone", "alaska"];
+
         async function carregar() {
             try {
                 const response = await fetch(`https://api.github.com/repos/${usuario}/${repositorio}/contents/`);
@@ -90,11 +93,31 @@
                 pastas.forEach(p => {
                     const partes = p.name.split('-');
                     const modelo = partes[0].toUpperCase();
-                    const versao = partes[1] ? partes[1].toUpperCase() : "GERAL";
-                    const nomeVersaoCompleto = `${modelo} ${versao}`;
+                    
+                    let indiceCorte = partes.length;
+
+                    // Acha a primeira ocorrência de uma cor no nome da pasta
+                    for (let i = 0; i < partes.length; i++) {
+                        if (listaCores.includes(partes[i].toLowerCase())) {
+                            indiceCorte = i;
+                            break;
+                        }
+                    }
+
+                    // Grupo: Tudo antes da cor
+                    const versao = partes.slice(0, indiceCorte).join(' ').toUpperCase();
+                    // Link: Da cor em diante
+                    let nomeCurto = partes.slice(indiceCorte).join(' ').replace('sem kit', '').trim();
+                    
+                    if (!nomeCurto) nomeCurto = "PADRÃO";
+
                     if (!grupos[modelo]) grupos[modelo] = {};
-                    if (!grupos[modelo][nomeVersaoCompleto]) grupos[modelo][nomeVersaoCompleto] = [];
-                    grupos[modelo][nomeVersaoCompleto].push(p);
+                    if (!grupos[modelo][versao]) grupos[modelo][versao] = [];
+                    
+                    grupos[modelo][versao].push({
+                        p: p,
+                        nomeCurto: nomeCurto
+                    });
                 });
 
                 for (const [modelo, versoes] of Object.entries(grupos)) {
@@ -108,20 +131,18 @@
                     const divLista = document.createElement('div');
                     divLista.className = 'lista-carros';
                     
-                    for (const [nomeVersao, carros] of Object.entries(versoes)) {
+                    // Ordena as versões para exibição
+                    const versoesOrdenadas = Object.keys(versoes).sort();
+
+                    versoesOrdenadas.forEach(nomeVersao => {
                         divLista.innerHTML += `<div class="versao-titulo">${nomeVersao}</div>`;
                         
-                        carros.forEach(carro => {
-                            // Pega o nome a partir da 3ª palavra para ser curto (ex: Cor + Detalhes)
-                            let nomeCurto = carro.name.split('-').slice(2).join(' ').replace('sem kit', '').trim();
-                            if (!nomeCurto) nomeCurto = "PADRÃO";
-
-                            const link = `https://${usuario}.github.io/${repositorio}/index.html?modelo=${carro.name}`;
-                            
+                        versoes[nomeVersao].forEach(carroObj => {
+                            const link = `https://${usuario}.github.io/${repositorio}/index.html?modelo=${carroObj.p.name}`;
                             const item = document.createElement('div');
                             item.className = 'carro-item';
                             item.innerHTML = `
-                                <div class="carro-nome">${nomeCurto}</div>
+                                <div class="carro-nome">${carroObj.nomeCurto}</div>
                                 <div class="botoes-acao">
                                     <button class="btn btn-copiar" onclick="copiarLink('${link}', this)">Link</button>
                                     <a href="${link}" target="_blank" class="btn btn-ver">Abrir</a>
@@ -129,7 +150,7 @@
                             `;
                             divLista.appendChild(item);
                         });
-                    }
+                    });
 
                     btn.onclick = () => {
                         const aberto = divLista.style.display === 'block';
