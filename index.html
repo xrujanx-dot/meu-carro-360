@@ -23,6 +23,25 @@
             color: #333; margin-bottom: 10px; text-transform: uppercase;
         }
 
+        /* --- ESTILO DAS BOLINHAS (ACRÉSCIMO) --- */
+        #seletor-cores {
+            display: flex; gap: 12px; justify-content: center;
+            margin-bottom: 20px; z-index: 100;
+        }
+        .bola-cor {
+            width: 35px; height: 35px; border-radius: 50%;
+            border: 2px solid #ddd; cursor: pointer;
+            object-fit: cover; transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .bola-cor:hover { transform: scale(1.1); }
+        .bola-cor.ativa { 
+            border-color: #007bff; 
+            box-shadow: 0 0 10px rgba(0,123,255,0.5); 
+            transform: scale(1.1);
+        }
+        /* --------------------------------------- */
+
         .wrapper-img {
             width: 100%; overflow: hidden;
             display: flex; justify-content: center;
@@ -50,6 +69,8 @@
 
     <div class="container-360" id="viewer">
         <div id="nome-veiculo"></div> 
+
+        <div id="seletor-cores"></div>
         
         <div class="wrapper-img" id="drag-area">
             <img id="carro-img" src="" alt="Carro 360">
@@ -75,6 +96,54 @@
         // Captura o modelo da URL
         const urlParams = new URLSearchParams(window.location.search);
         const pastaCarro = urlParams.get('modelo') || "pulse-drive-1.3-preto-vulcano-sem-kit";
+
+        // --- LÓGICA DO SELETOR DE CORES (ACRÉSCIMO) ---
+        const usuario = "xrujanx-dot";
+        const repositorio = "meu-carro-360";
+        const listaCoresRef = ["azul-amalfi", "cinza-strato", "preto-vulcano", "vermelho-montecarlo", "branco-banchisa", "prata-bari", "cinza-silvestone"];
+
+        async function carregarSeletorCores() {
+            try {
+                const res = await fetch(`https://api.github.com/repos/${usuario}/${repositorio}/contents/`);
+                const pastasRepositorio = await res.json();
+                
+                // Descobre o "DNA" do modelo atual (ex: argo-drive-mt)
+                let dnaModelo = "";
+                for (let cor of listaCoresRef) {
+                    if (pastaCarro.includes(cor)) {
+                        dnaModelo = pastaCarro.split(cor)[0];
+                        break;
+                    }
+                }
+
+                const seletorDiv = document.getElementById('seletor-cores');
+                seletorDiv.innerHTML = '';
+
+                // Filtra pastas que são do mesmo modelo/DNA
+                const modelosIrmaos = pastasRepositorio.filter(p => p.type === 'dir' && p.name.startsWith(dnaModelo));
+
+                listaCoresRef.forEach(corRef => {
+                    // Verifica se existe uma pasta para esta cor específica deste modelo
+                    const pastaExiste = modelosIrmaos.find(p => p.name.includes(corRef));
+                    
+                    if (pastaExiste) {
+                        const btn = document.createElement('img');
+                        // Busca a bolinha que você criou na sua pasta 'cores'
+                        btn.src = `https://raw.githubusercontent.com/${usuario}/${repositorio}/main/cores/${corRef}.png`;
+                        btn.className = 'bola-cor' + (pastaCarro === pastaExiste.name ? ' ativa' : '');
+                        
+                        btn.onclick = () => {
+                            if (pastaCarro !== pastaExiste.name) {
+                                window.location.search = `?modelo=${pastaExiste.name}`;
+                            }
+                        };
+                        seletorDiv.appendChild(btn);
+                    }
+                });
+            } catch (e) { console.error("Erro ao carregar seletor"); }
+        }
+        carregarSeletorCores();
+        // ----------------------------------------------
 
         // Título formatado
         document.getElementById('nome-veiculo').innerText = pastaCarro.replaceAll('-', ' ').replace('sem kit', '');
