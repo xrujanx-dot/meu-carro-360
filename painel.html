@@ -93,10 +93,10 @@
                 pastas.forEach(p => {
                     const partes = p.name.split('-');
                     const modelo = partes[0].toUpperCase();
+                    const nomeOriginal = p.name.toLowerCase();
                     
                     let indiceCorte = partes.length;
 
-                    // Acha a primeira ocorrência de uma cor no nome da pasta
                     for (let i = 0; i < partes.length; i++) {
                         if (listaCores.includes(partes[i].toLowerCase())) {
                             indiceCorte = i;
@@ -104,11 +104,21 @@
                         }
                     }
 
-                    // Grupo: Tudo antes da cor
-                    const versao = partes.slice(0, indiceCorte).join(' ').toUpperCase();
-                    // Link: Da cor em diante
-                    let nomeCurto = partes.slice(indiceCorte).join(' ').replace('sem kit', '').trim();
+                    // Grupo Base
+                    let versao = partes.slice(0, indiceCorte).join(' ').toUpperCase();
                     
+                    // --- REGRA ESPECIAL PULSE DRIVE ---
+                    if (modelo === "PULSE" && versao === "PULSE DRIVE") {
+                        const ehBrancoOuPreto = nomeOriginal.includes("banchisa") || nomeOriginal.includes("vulcano");
+                        const naoTemCambio = !nomeOriginal.includes("at") && !nomeOriginal.includes("mt");
+                        
+                        if (ehBrancoOuPreto && naoTemCambio) {
+                            versao = "PULSE DRIVE 1.3 AT"; // Move para o grupo correto
+                        }
+                    }
+                    // ----------------------------------
+
+                    let nomeCurto = partes.slice(indiceCorte).join(' ').replace('sem kit', '').trim();
                     if (!nomeCurto) nomeCurto = "PADRÃO";
 
                     if (!grupos[modelo]) grupos[modelo] = {};
@@ -131,7 +141,6 @@
                     const divLista = document.createElement('div');
                     divLista.className = 'lista-carros';
                     
-                    // Ordena as versões para exibição
                     const versoesOrdenadas = Object.keys(versoes).sort();
 
                     versoesOrdenadas.forEach(nomeVersao => {
