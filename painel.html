@@ -144,7 +144,7 @@
                                 <div class="carro-nome">${carroObj.nomeCurto}</div>
                                 <div class="botoes-acao">
                                     <button class="btn btn-copiar" onclick="copiarLink('${link}', this)">Link</button>
-                                    <button onclick="abrirEfocar('${link}')" class="btn btn-ver">Abrir</button>
+                                    <a href="${link}" target="_blank" class="btn btn-ver">Abrir</a>
                                 </div>
                             `;
                             divLista.appendChild(item);
@@ -161,13 +161,6 @@
                     painel.appendChild(divLista);
                 }
             } catch (e) { document.getElementById('painel-lista').innerHTML = "<div class='loading'>Erro ao conectar.</div>"; }
-        }
-
-        function abrirEfocar(url) {
-            const aba = window.open(url, 'visualizador360');
-            if (aba) {
-                aba.focus();
-            }
         }
 
         function copiarLink(url, btn) {
