@@ -80,21 +80,21 @@
     </div>
 
     <script>
-        // 1. CHECAGEM DE REDIRECIONAMENTO (DEVE SER A PRIMEIRA COISA)
+       <script>
+        // BLOQUEIO E REDIRECIONAMENTO IMEDIATO
         const urlParams = new URLSearchParams(window.location.search);
-        const modeloNaUrl = urlParams.get('modelo');
+        const pastaCarro = urlParams.get('modelo');
 
-        if (!modeloNaUrl) {
-            window.location.href = "https://viewcar360.com.br/painel.html";
+        if (!pastaCarro) {
+            window.location.replace("https://viewcar360.com.br/painel.html");
+            throw new Error("Redirecionando para o painel..."); // Para a execução do script aqui
         }
 
-        // 2. SE TIVER MODELO, O CÓDIGO SEGUE NORMALMENTE ABAIXO
+        // SE CHEGOU AQUI, É PORQUE TEM MODELO NA URL
         const img = document.getElementById('carro-img');
         const instrucao = document.getElementById('txt-instrucao');
         const totalImagens = 30; 
         let isDragging = false;
-
-        const pastaCarro = modeloNaUrl; // Aqui usamos o que vem da URL
         let indiceAtual = parseInt(urlParams.get('frame')) || 0;
         
         const img = document.getElementById('carro-img');
@@ -253,6 +253,7 @@
     </script>
 </body>
 </html>
+
 
 
 
