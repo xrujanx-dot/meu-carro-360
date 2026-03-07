@@ -140,7 +140,9 @@
                         divLista.innerHTML += `<div class="versao-titulo">${nomeVersao}</div>`;
                         
                         versoes[nomeVersao].forEach(carroObj => {
-                            const link = `https://${usuario}.github.io/${repositorio}/index.html?modelo=${carroObj.p.name}`;
+                            // --- CORREÇÃO AQUI: Mudando de github.io para viewcar360.com.br ---
+                            const link = `https://viewcar360.com.br/index.html?modelo=${carroObj.p.name}`;
+                            
                             const item = document.createElement('div');
                             item.className = 'carro-item';
                             item.innerHTML = `
