@@ -157,7 +157,12 @@
         
         if (pastaCarro) {
             carregarSeletorCores();
-            document.getElementById('nome-veiculo').innerText = pastaCarro.replaceAll('-', ' ').replace('sem kit', '');
+            const nomeAmigavel = pastaCarro.replaceAll('-', ' ').replace('sem kit', '');
+            document.getElementById('nome-veiculo').innerText = nomeAmigavel;
+            
+            // ATUALIZA O TÍTULO DA ABA DINAMICAMENTE
+            document.title = nomeAmigavel.toUpperCase() + " | ViewCar 360";
+
             const frameInicial = indiceAtual.toString().padStart(2, '0');
             img.src = `${pastaCarro}/${frameInicial}.webp`;
         }
@@ -247,9 +252,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
